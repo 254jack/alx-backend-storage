@@ -1,4 +1,4 @@
--- list all bands with Glam rock as their main style
+-- Search bands with style Glam rock
 -- Durantion current
 
 SELECT band_name, IFNULL(split, 2020) - IFNULL(formed, 0) AS lifespan 
