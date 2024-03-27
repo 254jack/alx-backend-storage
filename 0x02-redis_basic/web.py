@@ -1,36 +1,34 @@
 #!/usr/bin/env python3
 """
-web cache and tracker
+Caching request module
 """
-
-from requests import get
 import redis
+import requests
 from functools import wraps
+from typing import Callable
 
 
-def count_decorator(func: callable) -> callable:
+def track_get_page(fn: Callable) -> Callable:
+    """ Decorator for get_page
     """
-    decorator for caching
-    """
-    @wraps
-    def cache(url):
+    @wraps(fn)
+    def wrapper(url: str) -> str:
+        """ Wrapper function
         """
-        wrapper function
-        """
-        cache = redis.Redis()
-        key = "count:{}".format(url)
-        if not cache.exists(key):
-            cache.setex(key, 10, 1)
-        else:
-            cache.incr(key)
-        return func(url)
-    return cache
+        client = redis.Redis()
+        client.incr(f'count:{url}')
+        cached_page = client.get(f'{url}')
+        if cached_page:
+            return cached_page.decode('utf-8')
+        response = fn(url)
+        client.set(f'{url}', response, 10)
+        return response
+    return wrapper
 
 
-@count_decorator
+@track_get_page
 def get_page(url: str) -> str:
+    """ retrives the content of an html page, and also caches it
     """
-    retrives the content of an html page to cache it
-    """
-    html = get(url)
-    return html.content
+    response = requests.get(url)
+    return response.text
